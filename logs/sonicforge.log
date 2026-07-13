@@ -284,3 +284,5 @@ INFO:httpx:HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 
     }
   ]
 }
+2026-07-13 09:09:39,034 - INFO - Application ready.
+2026-07-13 09:09:39,147 - INFO - Saved API key loaded.
