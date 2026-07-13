@@ -1,0 +1,433 @@
+{
+  "name": "AI ALBUM GENERATOR",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c6285251-90c9-49c8-86d9-3f701d956b0d",
+              "name": "keyword",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        464,
+        400
+      ],
+      "id": "1299cb94-fe00-4a0a-8099-c5cc4ec87ea8",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        400
+      ],
+      "id": "21da870a-6af2-4bfe-8c90-3c7c1c9bcf05",
+      "name": "When chat message received",
+      "webhookId": "e752aa73-3d3b-4843-a3c9-77c15eb83c98"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.5",
+          "mode": "list",
+          "cachedResultName": "GPT-5.5"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are an expert concept album architect.\n\nUsing the album brief JSON, create a complete album blueprint.\n\nReturn ONLY valid JSON. No markdown.\n\nRequired output fields:\nalbum_title\nalbum_summary\nmain_style_prompt\ntrack_count\ntracks\n\nEach track must include:\ntrack_number\ntrack_title\nstory_purpose\nemotional_goal\nsuggested_bpm\nenergy_level\nnotes",
+              "role": "system"
+            },
+            {
+              "content": "=Create an album blueprint from this album brief:\n\n{{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        272,
+        640
+      ],
+      "id": "2a97be6d-e285-4ae2-9678-feff1397e9d5",
+      "name": "Generate Album Blueprint",
+      "credentials": {
+        "openAiApi": {
+          "id": "Gqjsc45GfB8qmbEh",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.5",
+          "mode": "list",
+          "cachedResultName": "GPT-5.5"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are an Album Creation Assistant.\n\nExtract the user's album idea into clean JSON.\n\nReturn ONLY valid JSON. No markdown. No explanation.\n\nRequired fields:\nalbum_title\nalbum_story\ngenre\ntrack_count\nspecial_notes\nfinal_emotion\n\nIf a field is missing, infer a useful default.\nDefault track_count is 10.",
+              "role": "system"
+            },
+            {
+              "content": "=You are an Album Creation Assistant.\n\nExtract the user's album idea into clean JSON.\n\nReturn ONLY valid JSON. No markdown. No explanation.\n\nRequired fields:\nalbum_title\nalbum_story\ngenre\ntrack_count\nspecial_notes\nfinal_emotion\n\nIf a field is missing, infer a useful default.\nDefault track_count is 10.\n\nAnalyze the following topic:\n\n{{ $('Edit Fields').item.json.keyword }}\n\n"
+            }
+          ]
+        },
+        "simplify": false,
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        688,
+        400
+      ],
+      "id": "5aa9d10a-9f6e-4185-aba7-1f19622f86ae",
+      "name": "Brainstorming Album Ideas",
+      "credentials": {
+        "openAiApi": {
+          "id": "Gqjsc45GfB8qmbEh",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "track_count, tracks",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        736,
+        640
+      ],
+      "id": "84f6f9e9-7417-43ab-80b6-63db1fa344e9",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.5",
+          "mode": "list",
+          "cachedResultName": "GPT-5.5"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an expert concept album songwriter.\n\nWrite one complete song for the provided track.\n\nReturn ONLY the lyrics. No explanation. No markdown.\n\nUse this structure:\nVerse 1\nPre-Chorus\nChorus\nVerse 2\nPre-Chorus\nChorus\nBridge\nFinal Chorus\nOutro"
+            },
+            {
+              "content": "=You are writing one song from a concept album.\n\nAlbum Information:\n{{ JSON.stringify({\n  album_title: $json.album_title,\n  album_summary: $json.album_summary,\n  main_style_prompt: $json.main_style_prompt\n}, null, 2) }}\n\nTrack Information:\n{{ JSON.stringify($json.tracks, null, 2) }}\n\nReturn ONLY the finished lyrics."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        272,
+        848
+      ],
+      "id": "ea30f8b9-d787-4827-a178-badf1e08527a",
+      "name": "Lyrics Builder",
+      "credentials": {
+        "openAiApi": {
+          "id": "Gqjsc45GfB8qmbEh",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const lyricsItems = $input.all();\nconst trackItems = $('Split Out').all();\n\nreturn lyricsItems.map((item, index) => {\n  const track = trackItems[index].json;\n  const lyrics = item.json.output[0].content[0].text;\n\n  return {\n    json: {\n      //album_title: track.album_title,\n      //album_summary: track.album_summary,\n      main_style_prompt: track.main_style_prompt,\n\n      track_number: track.tracks.track_number,\n      track_title: track.tracks.track_title,\n      story_purpose: track.tracks.story_purpose,\n      emotional_goal: track.tracks.emotional_goal,\n      suggested_bpm: track.tracks.suggested_bpm,\n      energy_level: track.tracks.energy_level,\n      notes: track.tracks.notes,\n\n      lyrics\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        848
+      ],
+      "id": "d84696ee-9a40-4d8c-9a3e-f9172940c2b5",
+      "name": "Enrich Track Package"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.5",
+          "mode": "list",
+          "cachedResultName": "GPT-5.5"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a Suno style addendum generator.\n\nCreate a concise track-specific addendum.\n\nMaximum length: 250 characters.\n\nInclude:\n- BPM\n- Vocal direction\n- Instrument emphasis\n- Emotional tone\n\nDo not repeat the main style prompt.\n\nReturn plain text only."
+            },
+            {
+              "content": "=Track Title:\n{{ $json.track_title }}\n\nStory Purpose:\n{{ $json.story_purpose }}\n\nEmotional Goal:\n{{ $json.emotional_goal }}\n\nSuggested BPM:\n{{ $json.suggested_bpm }}\n\nEnergy:\n{{ $json.energy_level }}\n\nNotes:\n{{ $json.notes }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        848
+      ],
+      "id": "ed995b1f-aecf-4e75-a9c5-8bcf85376ab8",
+      "name": "Style Addendum Generator",
+      "credentials": {
+        "openAiApi": {
+          "id": "Gqjsc45GfB8qmbEh",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const mainStyle = $('Split Out').all()[0].json.main_style_prompt;\nconst enrichedTracks = $('Enrich Track Package').all();\n\nreturn $input.all().map((item, index) => {\n  const track = enrichedTracks[index].json;\n  const addendum = item.json.output?.[0]?.content?.[0]?.text || item.json.style_addendum || \"\";\n\n  return {\n    json: {\n      title: track.track_title,\n      lyrics: track.lyrics,\n      style: `${mainStyle}\\n\\n${addendum}`,\n      customMode: true,\n      instrumental: false\n    }\n  };\n});;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        304,
+        1008
+      ],
+      "id": "21bdf930-294f-4533-b33d-86a1c67086b4",
+      "name": "Suno Style Packaging"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map((item) => {\n\n  return {\n    json: {\n      song: item.json\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        1008
+      ],
+      "id": "180a948b-1b6e-4c70-80cd-b1bd013187d4",
+      "name": "Build Suno Payload"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst albumTitle = $('Get Album Data').all()[0].json.album_title;\nlet doc = `# One-Tool Album Factory - Suno Manual Upload Package\\n\\n`;\n\nfor (const item of items) {\n  const song = item.json.song;\n\n  doc += `---\\n\\n`;\n  doc += `# ${song.title}\\n\\n`;\n  doc += `## Style\\n\\n${song.style}\\n\\n`;\n  doc += `## Lyrics\\n\\n${song.lyrics}\\n\\n`;\n}\n\nreturn [\n  {\n    json: {\n      fileName: `${albumTitle.replace(/\\s+/g,'_')}_Suno_Package.md`,\n      content: doc\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        1184
+      ],
+      "id": "f02f8fcb-0eee-444f-8982-fa27fe0b56ca",
+      "name": "Build Downloadable Document"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: JSON.parse($json.message.content)\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        640
+      ],
+      "id": "13f665db-0e85-4a25-954b-36ed531184a9",
+      "name": "Get Album Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst albumTitle = $('Get Album Data').all()[0].json.album_title;\n\nlet html = `<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>Album Package || ${albumTitle}</title>\n<style>\nbody { font-family: Arial, sans-serif; line-height: 1.6; padding: 40px; }\nh1 { border-bottom: 2px solid #333; }\npre { white-space: pre-wrap; background: #f4f4f4; padding: 15px; }\n.track { margin-bottom: 60px; }\n</style>\n</head>\n<body>\n<h1>One-Tool Album Factory | ${albumTitle}</h1>\n`;\n\nfor (const item of items) {\n  const song = item.json.song;\n\n  html += `  \n<div class=\"track\">\n<h2>${song.title}</h2>\n<h3>Style</h3>\n<pre>${song.style}</pre>\n<h3>Lyrics</h3>\n<pre>${song.lyrics}</pre>\n</div>\n`;\n}\n\nhtml += `</body></html>`;\n\nreturn [\n  {\n    json: {\n      fileName: \"album_package_\"+albumTitle+\".html\"\n    },\n    binary: {\n      data: {\n        data: Buffer.from(html, \"utf8\").toString(\"base64\"),\n        mimeType: \"text/html\",\n        fileName: \"album_package_\"+albumTitle+\".html\"\n      }\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        1008
+      ],
+      "id": "e3a8c723-6b7b-4434-a1a6-fb1e6d35d119",
+      "name": "Build HTML"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Brainstorming Album Ideas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Album Blueprint": {
+      "main": [
+        [
+          {
+            "node": "Get Album Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brainstorming Album Ideas": {
+      "main": [
+        [
+          {
+            "node": "Generate Album Blueprint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Lyrics Builder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lyrics Builder": {
+      "main": [
+        [
+          {
+            "node": "Enrich Track Package",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrich Track Package": {
+      "main": [
+        [
+          {
+            "node": "Style Addendum Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Style Addendum Generator": {
+      "main": [
+        [
+          {
+            "node": "Suno Style Packaging",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Suno Style Packaging": {
+      "main": [
+        [
+          {
+            "node": "Build Suno Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Suno Payload": {
+      "main": [
+        [
+          {
+            "node": "Build HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Downloadable Document": {
+      "main": [
+        []
+      ]
+    },
+    "Get Album Data": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "7a93c082-b3d9-4b6f-8e35-a68b1bbe842b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "59e4ad3395153244775aa14fb76cd8ced9c04a0d2673825a1664de9c30b98af6"
+  },
+  "nodeGroups": [],
+  "id": "TQw8v6v6DOpa4fK0",
+  "tags": [
+    {
+      "updatedAt": "2026-06-04T11:29:10.622Z",
+      "createdAt": "2026-06-04T11:29:10.622Z",
+      "id": "BOaJlaHgjTG45GY5",
+      "name": "Shared"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+openai
+customtkinter
+keyring
+pyinstaller
