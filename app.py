@@ -13,6 +13,7 @@ from openai import OpenAI, api_key
 import logging
 
 from pathlib import Path
+from modules.prompt_builder import PromptBuilder
 
 os.makedirs("logs", exist_ok=True)
 
@@ -55,16 +56,10 @@ class WorkshopWindow(ctk.CTkToplevel):
         super().__init__(parent)
 
         self.parent_app = parent
+        self.prompt_builder = PromptBuilder()
+        self.workshop_stage = "concept"
 
         self.conversation_messages: list[dict[str, str]] = []
-
-        self.system_prompt = load_prompt(
-            "workshop_system.md"
-        )
-
-        self.stage_prompt = load_prompt(
-            "workshop_stage_concept.md"
-        )
 
         self.title("Sonic Forge — Guided Album Workshop")
         self.geometry("900x650")
@@ -186,15 +181,17 @@ class WorkshopWindow(ctk.CTkToplevel):
         try:
             client = OpenAI(api_key=api_key)
 
-            instructions = (
-                f"{self.system_prompt}\n\n"
-                f"{self.stage_prompt}"
+            instructions, messages = (
+                self.prompt_builder.build(
+                    stage=self.workshop_stage,
+                    conversation=self.conversation_messages,
+                )
             )
 
             response = client.responses.create(
                 model="gpt-5.5",
                 instructions=instructions,
-                input=self.conversation_messages
+                input=messages,
             )
 
             reply = response.output_text.strip()

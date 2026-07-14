@@ -312,3 +312,7 @@ INFO:httpx:HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 
 2026-07-14 08:53:15,135 - INFO - Saved API key loaded.
 2026-07-14 08:54:01,535 - INFO - HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
 2026-07-14 08:55:48,033 - INFO - HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+2026-07-14 09:49:12,573 - INFO - Application ready.
+2026-07-14 09:49:12,611 - INFO - Saved API key loaded.
+2026-07-14 09:49:46,420 - INFO - HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+2026-07-14 09:50:45,281 - INFO - HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
