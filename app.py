@@ -136,6 +136,21 @@ class WorkshopWindow(ctk.CTkToplevel):
             sticky="ns"
         )
 
+        self.load_project_button = ctk.CTkButton(
+            input_frame,
+            text="Load Project",
+            width=120,
+            command=self.load_project
+        )
+
+        self.load_project_button.grid(
+            row=0,
+            column=3,
+            padx=(6, 12),
+            pady=12,
+            sticky="ns"
+        )
+
         self.add_message(
             "Forge",
             (
@@ -328,6 +343,115 @@ class WorkshopWindow(ctk.CTkToplevel):
         except OSError as error:
             messagebox.showerror(
                 "Save Error",
+                str(error),
+                parent=self,
+            )
+    
+    def refresh_conversation_history(self):
+        self.history_box.configure(state="normal")
+        self.history_box.delete("1.0", "end")
+
+        for message in self.conversation_messages:
+            role = message.get("role", "")
+            content = message.get("content", "")
+
+            if role == "user":
+                speaker = "You"
+            elif role == "assistant":
+                speaker = "Forge"
+            else:
+                continue
+
+            self.history_box.insert(
+                "end",
+                f"{speaker}:\n{content}\n\n"
+            )
+
+        self.history_box.configure(state="disabled")
+        self.history_box.see("end")
+
+    def load_project(self):
+        file_path = filedialog.askopenfilename(
+            parent=self,
+            title="Load Sonic Forge Project",
+            initialdir=self.parent_app.projects_folder,
+            filetypes=[
+                ("Sonic Forge Project", "*.json"),
+                ("JSON Files", "*.json"),
+            ],
+        )
+
+        if not file_path:
+            return
+
+        try:
+            with open(
+                file_path,
+                "r",
+                encoding="utf-8"
+            ) as project_file:
+                project_data = json.load(project_file)
+
+            if not isinstance(project_data, dict):
+                raise ValueError(
+                    "The selected file is not a valid Sonic Forge project."
+                )
+
+            conversation = project_data.get(
+                "conversation",
+                []
+            )
+
+            if not isinstance(conversation, list):
+                raise ValueError(
+                    "The project conversation is invalid."
+                )
+
+            self.workshop_stage = project_data.get(
+                "stage",
+                "concept"
+            )
+
+            self.conversation_messages = conversation
+
+            album_idea = project_data.get(
+                "album_idea",
+                ""
+            )
+
+            self.parent_app.album_idea_box.delete(
+                "1.0",
+                "end"
+            )
+
+            self.parent_app.album_idea_box.insert(
+                "1.0",
+                album_idea
+            )
+
+            self.refresh_conversation_history()
+
+            self.parent_app.log(
+                f"Workshop project loaded: {file_path}"
+            )
+
+            messagebox.showinfo(
+                "Project Loaded",
+                (
+                    "Project loaded successfully.\n\n"
+                    f"Stage: {self.workshop_stage}\n"
+                    f"Messages: {len(self.conversation_messages)}"
+                ),
+                parent=self,
+            )
+
+        except (
+            OSError,
+            json.JSONDecodeError,
+            ValueError
+        ) as error:
+            messagebox.showerror(
+                "Load Error",
                 str(error),
                 parent=self,
             )
