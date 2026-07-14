@@ -8,9 +8,11 @@ import json
 import re
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from openai import OpenAI
+from openai import OpenAI, api_key
 
 import logging
+
+from pathlib import Path
 
 os.makedirs("logs", exist_ok=True)
 
@@ -21,11 +23,238 @@ logging.basicConfig(
     encoding="utf-8"
 )
 
-
+######################################################
 APP_NAME = "Sonic Forge"
 SERVICE_NAME = "SonicForge"
 USERNAME = "openai_api_key"
 
+BASE_DIR = Path(__file__).resolve().parent
+PROMPT_DIR = BASE_DIR / "prompts"
+
+
+def load_prompt(filename: str) -> str:
+    prompt_path = PROMPT_DIR / filename
+
+    if not prompt_path.exists():
+        raise FileNotFoundError(
+            f"Prompt file not found: {prompt_path}"
+        )
+
+    content = prompt_path.read_text(encoding="utf-8")
+
+    marker = "## Prompt"
+
+    if marker in content:
+        content = content.split(marker, 1)[1]
+
+    return content.strip()
+#######################################################
+
+class WorkshopWindow(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.parent_app = parent
+
+        self.conversation_messages: list[dict[str, str]] = []
+
+        self.system_prompt = load_prompt(
+            "workshop_system.md"
+        )
+
+        self.stage_prompt = load_prompt(
+            "workshop_stage_concept.md"
+        )
+
+        self.title("Sonic Forge — Guided Album Workshop")
+        self.geometry("900x650")
+        self.minsize(760, 540)
+
+        self.transient(parent)
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
+        ctk.CTkLabel(self, text="Guided Album Workshop", font=ctk.CTkFont(size=24, weight="bold") ).grid(row=0, column=0, padx=20, pady=(20, 10), sticky="w"  )
+
+        self.history_box = ctk.CTkTextbox(       self,
+            wrap="word",
+            state="disabled"
+        )
+        self.history_box.grid(
+            row=1,
+            column=0,
+            padx=20,
+            pady=10,
+            sticky="nsew"
+        )
+
+        input_frame = ctk.CTkFrame(self)
+        input_frame.grid(
+            row=2,
+            column=0,
+            padx=20,
+            pady=(10, 20),
+            sticky="ew"
+        )
+        input_frame.grid_columnconfigure(0, weight=1)
+
+        self.message_box = ctk.CTkTextbox(
+            input_frame,
+            wrap="word",
+            height=100
+        )
+        self.message_box.grid(
+            row=0,
+            column=0,
+            padx=(12, 6),
+            pady=12,
+            sticky="ew"
+        )
+
+        self.send_button = ctk.CTkButton(
+            input_frame,
+            text="Discuss Album",
+            width=140,
+            command=self.submit_message
+        )
+        self.send_button.grid(
+            row=0,
+            column=1,
+            padx=(6, 12),
+            pady=12,
+            sticky="ns"
+        )
+
+        self.add_message(
+            "Forge",
+            (
+                "Welcome to the Guided Album Workshop.\n\n"
+                "Describe what the album should be about, how it should "
+                "feel, and anything the finished album must avoid."
+            )
+        )
+
+        self.message_box.focus()
+
+    def submit_message(self):
+        message = self.message_box.get(
+            "1.0",
+            "end"
+        ).strip()
+
+        if not message:
+            messagebox.showwarning(
+                "Missing Message",
+                "Enter a message first.",
+                parent=self
+            )
+            return
+
+        api_key = self.parent_app.api_key_entry.get().strip()
+
+        if not api_key:
+            messagebox.showwarning(
+                "Missing API Key",
+                "Enter your OpenAI API key in the main window first.",
+                parent=self
+            )
+            return
+
+        self.add_message("You", message)
+
+        self.conversation_messages.append({
+        "role": "user",
+        "content": message
+    })
+
+        self.message_box.delete("1.0", "end")
+
+        self.send_button.configure(
+        state="disabled",
+        text="Forge is thinking..."
+    )
+
+        thread = threading.Thread(
+            target=self.request_forge_response,
+            args=(api_key,),
+            daemon=True
+        )
+        thread.start()
+
+    def request_forge_response(self, api_key: str):
+        try:
+            client = OpenAI(api_key=api_key)
+
+            instructions = (
+                f"{self.system_prompt}\n\n"
+                f"{self.stage_prompt}"
+            )
+
+            response = client.responses.create(
+                model="gpt-5.5",
+                instructions=instructions,
+                input=self.conversation_messages
+            )
+
+            reply = response.output_text.strip()
+
+            if not reply:
+                raise RuntimeError(
+                    "Sonic Forge returned an empty response."
+                )
+
+            self.after(
+                0,
+                self.finish_forge_response,
+                reply
+            )
+
+        except Exception as error:
+            self.after(
+            0,
+            self.handle_forge_error,
+            str(error)
+        )
+            
+    def finish_forge_response(self, reply: str):
+        self.conversation_messages.append({
+            "role": "assistant",
+            "content": reply
+        })
+
+        self.add_message("Forge", reply)
+
+        self.send_button.configure(
+            state="normal",
+            text="Discuss Album"
+        )
+
+        self.message_box.focus()
+
+
+    def handle_forge_error(self, error_message: str):
+        self.send_button.configure(
+            state="normal",
+            text="Discuss Album"
+        )
+
+        messagebox.showerror(
+            "Workshop Error",
+            error_message,
+            parent=self
+        )
+
+    def add_message(self, speaker, message):
+        self.history_box.configure(state="normal")
+
+        self.history_box.insert(
+            "end",
+            f"{speaker}:\n{message}\n\n"
+        )
+
+        self.history_box.configure(state="disabled")
+        self.history_box.see("end")
 
 class AlbumFactoryApp(ctk.CTk):
     def __init__(self):
@@ -204,6 +433,9 @@ class AlbumFactoryApp(ctk.CTk):
 
         self.generate_button.grid(row=1, column=0, padx=16, pady=12, sticky="ew")
 
+        self.workshop_button = ctk.CTkButton(right, text="Guided Album Workshop", height=40, command=self.open_workshop_placeholder)
+        self.workshop_button.grid(row=2, column=0, padx=16, pady=(0, 12), sticky="ew")
+
         self.progress = ctk.CTkProgressBar(right)
         self.progress.set(0)
         self.progress.grid(row=3, column=0, padx=16, pady=(12, 4), sticky="ew")
@@ -236,7 +468,18 @@ class AlbumFactoryApp(ctk.CTk):
         self.log("Application ready.")
         self.update_track_estimates(self.track_count_value)
 
+    
+    def open_workshop_placeholder(self):
+        if (
+            hasattr(self, "workshop_window")
+            and self.workshop_window.winfo_exists()
+        ):
+            self.workshop_window.focus()
+            return
 
+        self.workshop_window = WorkshopWindow(self)
+    
+    
     def save_api_key(self):
         api_key = self.api_key_entry.get().strip()
 
