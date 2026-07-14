@@ -121,6 +121,21 @@ class WorkshopWindow(ctk.CTkToplevel):
             sticky="ns"
         )
 
+        self.save_project_button = ctk.CTkButton(
+            input_frame,
+            text="Save Project",
+            width=120,
+            command=self.save_project
+        )
+
+        self.save_project_button.grid(
+            row=0,
+            column=2,
+            padx=(6, 12),
+            pady=12,
+            sticky="ns"
+        )
+
         self.add_message(
             "Forge",
             (
@@ -252,6 +267,70 @@ class WorkshopWindow(ctk.CTkToplevel):
 
         self.history_box.configure(state="disabled")
         self.history_box.see("end")
+    
+    def save_project(self):
+        album_idea = self.parent_app.album_idea_box.get(
+            "1.0",
+            "end"
+        ).strip()
+
+        default_name = "sonic_forge_project.json"
+
+        file_path = filedialog.asksaveasfilename(
+            parent=self,
+            title="Save Sonic Forge Project",
+            initialdir=self.parent_app.projects_folder,
+            initialfile=default_name,
+            defaultextension=".json",
+            filetypes=[
+                ("Sonic Forge Project", "*.json"),
+                ("JSON Files", "*.json"),
+            ],
+        )
+
+        if not file_path:
+            return
+
+        project_data = {
+            "format_version": 1,
+            "application": APP_NAME,
+            "stage": self.workshop_stage,
+            "album_idea": album_idea,
+            "conversation": self.conversation_messages,
+            "approved_concept": None,
+            "album_blueprint": None,
+            "tracks": [],
+        }
+
+        try:
+            with open(
+                file_path,
+                "w",
+                encoding="utf-8"
+            ) as project_file:
+                json.dump(
+                    project_data,
+                    project_file,
+                    indent=2,
+                    ensure_ascii=False,
+                )
+
+            self.parent_app.log(
+                f"Workshop project saved: {file_path}"
+            )
+
+            messagebox.showinfo(
+                "Project Saved",
+                f"Project saved successfully:\n\n{file_path}",
+                parent=self,
+            )
+
+        except OSError as error:
+            messagebox.showerror(
+                "Save Error",
+                str(error),
+                parent=self,
+            )
 
 class AlbumFactoryApp(ctk.CTk):
     def __init__(self):
@@ -275,6 +354,14 @@ class AlbumFactoryApp(ctk.CTk):
         )
 
         os.makedirs(self.output_folder, exist_ok=True)
+
+        self.projects_folder = os.path.join(
+            documents,
+            "Sonic Forge",
+            "Projects"
+        )
+
+        os.makedirs(self.projects_folder, exist_ok=True)
 
         self.build_ui()
         self.load_api_key()

@@ -316,3 +316,11 @@ INFO:httpx:HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 
 2026-07-14 09:49:12,611 - INFO - Saved API key loaded.
 2026-07-14 09:49:46,420 - INFO - HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
 2026-07-14 09:50:45,281 - INFO - HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+2026-07-14 10:06:58,935 - INFO - Application ready.
+2026-07-14 10:06:58,983 - INFO - Saved API key loaded.
+2026-07-14 10:08:22,321 - INFO - HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+2026-07-14 10:08:53,961 - INFO - Workshop project saved: C:/Users/mbell/Documents/Sonic Forge/Projects/sonic_forge_project.json
+2026-07-14 10:10:48,462 - INFO - Application ready.
+2026-07-14 10:10:48,510 - INFO - Saved API key loaded.
+2026-07-14 10:11:45,140 - INFO - HTTP Request: POST https://api.openai.com/v1/responses "HTTP/1.1 200 OK"
+2026-07-14 10:12:05,852 - INFO - Workshop project saved: C:/Users/mbell/Documents/Sonic Forge/Projects/sonic_forge_project_2.json
